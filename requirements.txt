@@ -1,0 +1,5 @@
+pandas==2.2.2
+scikit_learn==1.5.1
+tokenizers==0.20.0
+torch==2.4.0
+tqdm==4.66.5
