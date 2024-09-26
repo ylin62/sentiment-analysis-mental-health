@@ -18,8 +18,10 @@ Initially the character based simple tokenizer was used, however, the model was 
 ### Validation
 The model was tested with validation data and customized input. 
 
+![confusion matrix](confusion_matrix.png)
+
 ### Notebook
 
-For training process, the code can be found [here](https://github.com/ylin62/sentiment-analysis-mental-health/blob/gh-pages/sentiment-analysis.py)
+For training process and model details, the code can be found [here](https://github.com/ylin62/sentiment-analysis-mental-health/blob/gh-pages/sentiment-analysis.py)
 
 For evaluation, a notebook can be found [here](https://github.com/ylin62/sentiment-analysis-mental-health/blob/gh-pages/sentiment-analysis-mental-health.ipynb)
