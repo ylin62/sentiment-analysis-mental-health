@@ -1,3 +1,4 @@
+from functools import partial
 import pandas as pd
 import torch
 from torch import nn
@@ -59,12 +60,12 @@ class PositionalEncoding(nn.Module):
 
 
 class CustomTransformerModel(nn.Module):
-    def __init__(self, vocab_size, d_model, nhead, num_encoder_layers, num_classes):
+    def __init__(self, vocab_size, d_model, max_length, nhead, num_encoder_layers, num_classes, dropout, dim_feedforward):
         super(CustomTransformerModel, self).__init__()
         self.embedding = nn.Embedding(vocab_size, d_model)
         # self.pos_encoder = PositionalEncoding(d_model)
         self.positional_embedding = nn.Embedding(max_length, d_model)
-        encoder_layers = nn.TransformerEncoderLayer(d_model, nhead, batch_first=True, dropout=DROPOUT, dim_feedforward=FF_SIZE)
+        encoder_layers = nn.TransformerEncoderLayer(d_model, nhead, batch_first=True, dropout=dropout, dim_feedforward=dim_feedforward)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_encoder_layers)
         self.fc = nn.Linear(d_model, num_classes)
         # self.batch_norm = nn.BatchNorm1d(d_model)
@@ -80,12 +81,7 @@ class CustomTransformerModel(nn.Module):
         output = self.fc(output)
         return output
 
-
-# # Assume you have a tokenizer function
-# def simple_tokenizer(text):
-#     return [encoder[c] for c in text]  # Simple example: convert each character to its ASCII value
-
-def simple_tokenizer(text):
+def tokenization(text, tokenizer):
     return tokenizer.encode(text).ids
 
 
@@ -125,15 +121,6 @@ if __name__ == "__main__":
             
     max_length = int(df["statement"].apply(len).quantile(0.9))
     
-    # temp_set = set()
-    # for item in df["statement"].apply(set):
-    #     temp_set = temp_set | item
-   
-    # vocab_size = len(temp_set) + 1
-    
-    # encoder = {s: i+1 for i, s in enumerate(sorted(temp_set))}
-    
-    # vocab_size = len(temp_set) + 1
     print(f"vocab size is: {vocab_size}")
     
     temp_set = set()
@@ -148,15 +135,22 @@ if __name__ == "__main__":
     
     train_statements, val_statements, train_labels, val_labels = train_test_split(statements, encoded_labels, test_size=0.2, random_state=42)
     # Create datasets
-    train_dataset = SentimentDataset(train_statements, train_labels, tokenizer=simple_tokenizer, max_length=max_length)
-    val_dataset = SentimentDataset(val_statements, val_labels, tokenizer=simple_tokenizer, max_length=max_length)
+    train_dataset = SentimentDataset(train_statements, train_labels, tokenizer=partial(tokenization, tokenizer=tokenizer), max_length=max_length)
+    val_dataset = SentimentDataset(val_statements, val_labels, tokenizer=partial(tokenization, tokenizer=tokenizer), max_length=max_length)
 
     # Data loaders
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn)
     
     # Instantiate the model
-    model = CustomTransformerModel(vocab_size=vocab_size, d_model=D_MODEL, nhead=2, num_encoder_layers=4, num_classes=len(label_encoder.classes_)).to(device)
+    model = CustomTransformerModel(vocab_size=vocab_size, 
+                                   d_model=D_MODEL, 
+                                   max_length=max_length,
+                                   nhead=2, 
+                                   num_encoder_layers=4, 
+                                   num_classes=len(label_encoder.classes_), 
+                                   dropout=DROPOUT, 
+                                   dim_feedforward=FF_SIZE).to(device)
     
     # model_state_dict = torch.load("model_state.pth", weights_only=True)
     # model.load_state_dict(model_state_dict)
